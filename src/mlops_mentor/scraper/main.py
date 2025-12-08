@@ -6,27 +6,13 @@ from pathlib import Path
 
 import numpy as np
 import requests
+from datasets import Dataset
 from loguru import logger
 from typer import Typer
 
 from mlops_mentor.common import github_headers as headers
 from mlops_mentor.common.data import load_groups
 from mlops_mentor.scraper.models import RepoContent, Report, RepoStats
-
-# def upload_data(file_name: str) -> None:
-#     """Uploads the repo stats data to GCS."""
-#     storage_client = Client()
-#     bucket = storage_client.bucket("mlops_group_repository")
-#     blob = bucket.blob(file_name)
-#     blob.upload_from_filename(file_name)
-#
-#
-# def download_data(file_name: str) -> None:
-#     """Downloads the group-repository data from GCS."""
-#     storage_client = Client()
-#     bucket = storage_client.bucket("mlops_group_repository")
-#     blob = bucket.blob(file_name)
-#     blob.download_to_filename(file_name)
 
 
 def create_activity_matrix(
@@ -64,7 +50,7 @@ app = Typer()
 
 
 @app.command()
-def scrape():
+def scrape(push_to_hub: bool = False, hub_repo_id: str = "your-username/repo-stats"):
     """Main function to scrape the group-repository data."""
     logger.info("Getting group-repository information")
     # download_data("group_info.csv")
@@ -216,14 +202,27 @@ def scrape():
     logger.info("Writing repo stats to file")
     now = datetime.datetime.now(tz=datetime.UTC).strftime("%Y_%m_%d_%H_%M_%S")
     filename = f"repo_stats_{now}.json"
-    with open("repo_stats.json", "w") as f:
-        json.dump([r.model_dump() for r in repo_stats], f)
-    with open(filename, "w") as f:
-        json.dump([r.model_dump() for r in repo_stats], f)
 
-    # logger.info("Uploading repo stats to GCS")
-    #    upload_data("repo_stats.json")
-    #    upload_data(filename)
+    # Convert to list of dicts for serialization
+    repo_stats_dicts = [r.model_dump() for r in repo_stats]
+
+    with open("repo_stats.json", "w") as f:
+        json.dump(repo_stats_dicts, f)
+    with open(filename, "w") as f:
+        json.dump(repo_stats_dicts, f)
+
+    # Create and optionally push Hugging Face dataset
+    if push_to_hub:
+        logger.info("Creating Hugging Face dataset")
+        dataset = Dataset.from_list(repo_stats_dicts)
+
+        logger.info(f"Pushing dataset to Hugging Face Hub: {hub_repo_id}")
+        dataset.push_to_hub(
+            hub_repo_id, private=True
+        )  # Set private=False if you want it public
+        logger.info("Dataset successfully pushed to Hugging Face Hub")
+    else:
+        logger.info("Skipping Hugging Face Hub upload (use --push-to-hub to enable)")
 
     logger.info("Cleaning locally temp files")
     Path("README.md").unlink()
@@ -235,7 +234,6 @@ def scrape():
 def clone(base_dir: str = "cloned_repos"):
     """Clones the repositories of the groups."""
     logger.info("Getting group-repository information")
-    # download_data("group_info.csv")
     groups = load_groups()
     logger.info("Group-repository information loaded successfully")
 
