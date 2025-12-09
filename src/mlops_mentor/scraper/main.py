@@ -218,7 +218,7 @@ def scrape(push_to_hub: bool = False, hub_repo_id: str = "your-username/repo-sta
 
         logger.info(f"Pushing dataset to Hugging Face Hub: {hub_repo_id}")
         dataset.push_to_hub(
-            hub_repo_id, private=True
+            hub_repo_id, config_name="repo_stats", private=True
         )  # Set private=False if you want it public
         logger.info("Dataset successfully pushed to Hugging Face Hub")
     else:
