@@ -51,6 +51,54 @@ class TADependency(BaseModel):
     repomix: RepoMix
 
 
+class CodeQualityResponse(BaseModel):
+    """Model for the response from the code quality agent."""
+
+    score: int = Field(
+        ..., ge=1, le=5, description="Score the code quality on a scale from 1 to 5"
+    )
+    summary: str = Field(
+        ..., description="Brief summary of code quality findings (max 200 words)"
+    )
+    confidence: int = Field(
+        ..., ge=1, le=10, description="Confidence in the score from 1-10"
+    )
+
+
+class UnitTestingResponse(BaseModel):
+    """Model for the response from the unit testing agent."""
+
+    score: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description="Score the unit testing in the codebase on a scale from 1 to 5",
+    )
+    summary: str = Field(
+        ..., description="Brief summary of unit testing findings (max 200 words)"
+    )
+    confidence: int = Field(
+        ..., ge=1, le=10, description="Confidence in the score from 1-10"
+    )
+
+
+class CICDResponse(BaseModel):
+    """Model for the response from the CI/CD agent."""
+
+    score: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description="Score the continuous integration and deployment process on a scale from 1 to 5",
+    )
+    summary: str = Field(
+        ..., description="Brief summary of CI/CD findings (max 200 words)"
+    )
+    confidence: int = Field(
+        ..., ge=1, le=10, description="Confidence in the score from 1-10"
+    )
+
+
 class TACodeResponse(BaseModel):
     """Model for the response from the TA agent for the code."""
 
@@ -79,8 +127,50 @@ class TACodeResponse(BaseModel):
         ..., ge=1, le=10, description="Confidence in the overall score from 1-10"
     )
 
+    @classmethod
+    def from_sub_agents(
+        cls,
+        code_quality_response: CodeQualityResponse,
+        unit_testing_response: UnitTestingResponse,
+        cicd_response: CICDResponse,
+    ) -> "TACodeResponse":
+        """Create TACodeResponse from individual sub-agent responses."""
+        # Calculate overall score as weighted average
+        overall_score = round(
+            (
+                code_quality_response.score * 2
+                + unit_testing_response.score * 2
+                + cicd_response.score * 1.5
+            )
+            / 1.1
+        )
+        overall_score = max(1, min(10, overall_score))  # Ensure 1-10 range
 
-#    request_usage: RunUsage | None = None
+        # Calculate confidence as average of sub-agent confidences
+        avg_confidence = round(
+            (
+                code_quality_response.confidence
+                + unit_testing_response.confidence
+                + cicd_response.confidence
+            )
+            / 3
+        )
+
+        # Combine summaries
+        summary = (
+            f"Code Quality: {code_quality_response.summary}\n\n"
+            f"Unit Testing: {unit_testing_response.summary}\n\n"
+            f"CI/CD: {cicd_response.summary}"
+        )
+
+        return cls(
+            code_quality=code_quality_response.score,
+            unit_testing=unit_testing_response.score,
+            ci_cd=cicd_response.score,
+            summary=summary,
+            overall_score=overall_score,
+            confidence=avg_confidence,
+        )
 
 
 class TAReportResponse(BaseModel):
