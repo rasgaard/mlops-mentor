@@ -73,13 +73,14 @@ class TACodeResponse(BaseModel):
         ..., description="Provide a brief summary of the code quality and unit testing"
     )
     overall_score: int = Field(
-        ..., ge=1, le=10, description="Overall score from 1-10 for the hole codebase"
+        ..., ge=1, le=10, description="Overall score from 1-10 for the whole codebase"
     )
     confidence: int = Field(
         ..., ge=1, le=10, description="Confidence in the overall score from 1-10"
     )
 
-    request_usage: RunUsage | None = None
+
+#    request_usage: RunUsage | None = None
 
 
 class TAReportResponse(BaseModel):

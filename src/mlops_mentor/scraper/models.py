@@ -15,27 +15,27 @@ class RepoStats(BaseModel):
 
     group_number: int
     group_size: int
-    num_contributors: int | None = None
-    num_prs: int | None = None
-    num_commits_to_main: int | None = None
-    average_commit_length_to_main: float | None = None
-    latest_commit: str | None = None
-    average_commit_length: float | None = None
-    contributions_per_contributor: list[int] | None = None
-    total_commits: int | None = None
-    activity_matrix: list[list[int]] | None = None
+    num_contributors: int | None
+    num_prs: int | None
+    num_commits_to_main: int | None
+    average_commit_length_to_main: float | None
+    latest_commit: str | None
+    average_commit_length: float | None
+    contributions_per_contributor: list[int] | None
+    total_commits: int | None
+    activity_matrix: list[list[int]] | None
 
-    num_docker_files: int | None = None
-    num_python_files: int | None = None
-    num_workflow_files: int | None = None
-    has_requirements_file: bool | None = None
-    has_cloudbuild: bool | None = None
-    using_dvc: bool | None = None
-    repo_size: float | None = None
-    readme_length: int | None = None
-    actions_passing: bool | None = None
+    num_docker_files: int | None
+    num_python_files: int | None
+    num_workflow_files: int | None
+    has_requirements_file: bool | None
+    has_cloudbuild: bool | None
+    using_dvc: bool | None
+    repo_size: float | None
+    readme_length: int | None
+    actions_passing: bool | None
 
-    num_warnings: int | None = None
+    num_warnings: int | None
 
     def __repr__(self):
         """Returns a string representation of the model."""

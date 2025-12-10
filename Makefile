@@ -3,3 +3,6 @@ scrape:
 
 formatting:
 	uvx ruff check src/
+
+leaderboard:
+	uv run src/mlops_mentor/leaderboard/app.py

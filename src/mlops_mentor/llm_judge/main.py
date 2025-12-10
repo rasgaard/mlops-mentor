@@ -4,7 +4,6 @@ import shutil
 from pathlib import Path
 from pprint import pprint
 
-# import logfire
 import typer
 from loguru import logger
 from pydantic_ai import Agent, RunContext
@@ -20,13 +19,10 @@ from mlops_mentor.llm_judge.models import (
 )
 from mlops_mentor.llm_judge.utils import get_repo_content
 
-# logfire.configure()
-# logfire.instrument_asyncpg()
-
 app = typer.Typer(add_completion=False, pretty_exceptions_enable=False)
 
 model = OpenAIChatModel(
-    "gemma3",
+    "gpt-oss",
     provider=LiteLLMProvider(
         api_base="https://chat.campusai.compute.dtu.dk/api/v1",
         api_key=os.getenv("CAMPUSAI_API_KEY"),
@@ -48,41 +44,47 @@ def codebase(group_nb: None | int = None, clean: bool = True) -> None:
     ta_agent = Agent(
         model=model,
         deps_type=TADependency,
-        output_type=TACodeResponse,
-        system_prompt="""
-        You are a teaching assistant for a university level course on machine learning operations.
-        Your job is to review and evaluate the students final group project. Review the code for adherence to coding
-        best practices and industry standards. Identify areas where the code could be improved in terms of readability,
-        maintainability and efficiency. You need to provide the following feedback to the students.
+        output_type=TACodeResponse,  # Changed from output_type
+        system_prompt="""You are a teaching assistant for a university level course on machine learning operations.
+        Your job is to review and evaluate the students final group project.
 
-        * Score the code quality on a scale from 1 to 5 using these criteria:
-            1: Poor - The code violates many best practices, has poor readability, and is difficult to maintain.
-            2: Below Average - The code has significant issues in readability, maintainability, or efficiency.
-            3: Average - The code meets basic standards but has room for improvement.\n
-            4: Good - The code adheres to most best practices with only minor issues.\n
-            5: Excellent - The code is clean, maintainable, and follows industry best practices.\n
+        You must provide scores as integers in the specified ranges:
+        
+        CODE QUALITY (1-5):
+        1: Poor - Major violations of best practices, unreadable
+        2: Below Average - Significant readability/maintainability issues
+        3: Average - Meets basic standards, room for improvement
+        4: Good - Follows most best practices, minor issues only
+        5: Excellent - Clean, maintainable, follows all best practices
 
-        * Score the unit testing in the codebase using these criteria:
+        UNIT TESTING (1-5):
+        1: Poor - No or minimal tests, negligible coverage
+        2: Below Average - Tests exist but inadequate coverage
+        3: Average - Adequate coverage with noticeable gaps
+        4: Good - Good coverage of critical functionality
+        5: Excellent - Comprehensive test coverage
 
-            1: Poor - Minimal or no unit tests, with negligible code coverage.\n
-            2: Below Average - Unit tests exist but fail to cover significant parts of the codebase.\n
-            3: Average - Adequate unit test coverage but with noticeable gaps.\n
-            4: Good - Unit tests cover most of the critical functionality with minor areas lacking.\n
-            5: Excellent - Comprehensive unit tests thoroughly cover the entire codebase.\n
+        CI/CD (1-5):
+        1: Poor - No pipeline or completely broken
+        2: Below Average - Exists but unreliable or manual
+        3: Average - Functional but missing best practices
+        4: Good - Reliable and mostly automated
+        5: Excellent - Robust, fully automated, follows best practices
 
-        * Score the continuous integration and deployment process using these criteria:
+        SUMMARY: Provide 2-3 paragraphs (max 500 words) covering code quality, testing, CI/CD, and improvement suggestions.
 
-            1: Poor - No CI/CD pipeline or the pipeline is broken.\n
-            2: Below Average - CI/CD pipeline exists but is unreliable or lacks automation.\n
-            3: Average - CI/CD pipeline is functional but lacks some best practices.\n
-            4: Good - CI/CD pipeline is reliable and automated with only minor issues.\n
-            5: Excellent - CI/CD pipeline is robust, automated, and follows industry best practices.\n
+        OVERALL SCORE (1-10): Rate the entire MLOps pipeline implementation.
+        CONFIDENCE (1-10): Your confidence in the assessment.
 
-        * Provide a brief summary of the code quality, unit testing, ci/cd, along with any suggestions for improvement.
-            You should be using no more than 500 words for this summary.
-
-        * Finally, provide a both a overall score from 1-10 for the hole codebase how well it implements a machine
-            learning operations pipeline and also provide your confidence in a score from 1-10
+        Example valid response:
+        {
+            "code_quality": 4,
+            "unit_testing": 3,
+            "ci_cd": 2,
+            "summary": "The codebase demonstrates good structure and readability...",
+            "overall_score": 6,
+            "confidence": 8
+        }
         """,
     )
 
@@ -91,8 +93,11 @@ def codebase(group_nb: None | int = None, clean: bool = True) -> None:
         group_number = ctx.deps.group_info.group_number
         repo_content = get_repo_content(ctx.deps.group_info.repo_url, ctx.deps.repomix)
         return f"""
-        Group {group_number} has submitted the following repository:
+        Group {group_number} repository:
+        
         {repo_content}
+        
+        Analyze this repository and provide scores following the exact JSON format specified.
         """
 
     group_data = load_groups()
@@ -114,6 +119,10 @@ def codebase(group_nb: None | int = None, clean: bool = True) -> None:
                     customPatterns=[
                         ".dvc/*",
                         "*.dvc",
+                        "**/*.js",
+                        "**/*.css",
+                        "**/*.map",
+                        "**/*.svg",
                         "**/*/report.py",
                         "reports/README.md",
                         "*.gitignore",
@@ -130,13 +139,16 @@ def codebase(group_nb: None | int = None, clean: bool = True) -> None:
             ),
         )
         try:
+            logger.debug(f"System prompt : {ta_agent._system_prompts}")
             result = ta_agent.run_sync(
-                "What do you think of the groups repository? Output in JSON", deps=deps
+                "Evaluate this group's repository and return a JSON response with all required fields.",
+                deps=deps,
             )
-            result.output.request_usage = result.usage()
+            #            result.output.request_usage = result.usage()  # Changed from result.output
             pprint(result.output)
             responses.append(result.output)
         except Exception as e:
+            logger.error(f"Failed for group {group.group_number}: {e}")
             finalize(responses, clean, name="codebase")
             raise e
     finalize(responses, clean, name="codebase")
