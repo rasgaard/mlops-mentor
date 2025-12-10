@@ -25,7 +25,7 @@ from mlops_mentor.llm_judge.utils import get_repo_content
 app = typer.Typer(add_completion=False, pretty_exceptions_enable=False)
 
 model = OpenAIChatModel(
-    "gpt-oss",
+    "Gemma3",
     provider=LiteLLMProvider(
         api_base="https://chat.campusai.compute.dtu.dk/api/v1",
         api_key=os.getenv("CAMPUSAI_API_KEY"),
@@ -66,7 +66,7 @@ SCORE (1-5):
 
 SUMMARY: 1-2 paragraphs (max 200 words) on code quality findings and suggestions.
 CONFIDENCE (1-10): Your confidence in the assessment.
-        """,
+""",
     )
 
     @agent.system_prompt
@@ -102,7 +102,7 @@ SCORE (1-5):
 
 SUMMARY: 1-2 paragraphs (max 200 words) on testing findings and suggestions.
 CONFIDENCE (1-10): Your confidence in the assessment.
-        """,
+""",
     )
 
     @agent.system_prompt
@@ -138,7 +138,7 @@ SCORE (1-5):
 
 SUMMARY: 1-2 paragraphs (max 200 words) on CI/CD findings and suggestions.
 CONFIDENCE (1-10): Your confidence in the assessment.
-        """,
+""",
     )
 
     @agent.system_prompt
@@ -257,9 +257,9 @@ def codebase(group_nb: None | int = None, clean: bool = True) -> None:
 
         except Exception as e:
             logger.error(f"Failed for group {group.group_number}: {e}")
-            finalize(responses, clean, name="codebase")
+            finalize(responses, clean, name="codebase_judge_outputs.json")
             raise e
-    finalize(responses, clean, name="codebase")
+    finalize(responses, clean, name="codebase_judge_outputs.json")
 
 
 @app.command()

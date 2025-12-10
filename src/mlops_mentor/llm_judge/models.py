@@ -136,17 +136,17 @@ class TACodeResponse(BaseModel):
     ) -> "TACodeResponse":
         """Create TACodeResponse from individual sub-agent responses."""
         # Calculate overall score as weighted average
-        overall_score = round(
-            (
-                code_quality_response.score * 2
-                + unit_testing_response.score * 2
-                + cicd_response.score * 1.5
-            )
-            / 1.1
-        )
-        overall_score = max(1, min(10, overall_score))  # Ensure 1-10 range
+        # Compute weighted average on the original 1-5 scale
+        avg_score = (
+            code_quality_response.score
+            + unit_testing_response.score
+            + cicd_response.score
+        ) / 3.0
 
-        # Calculate confidence as average of sub-agent confidences
+        # Map 1-5 -> 1-10 linearly
+        overall_score = round(1 + (avg_score - 1) * 2.25)
+        overall_score = max(1, min(10, overall_score))
+
         avg_confidence = round(
             (
                 code_quality_response.confidence
