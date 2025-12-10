@@ -41,6 +41,11 @@ def finalize(responses: list, clean: bool = True, name: str = "responses.json") 
         shutil.rmtree(Path("output"))
 
 
+def repo_context(ctx: RunContext[TADependency], context_type: str = "code") -> str:
+    repo_content = get_repo_content(ctx.deps.group_info.repo_url, ctx.deps.repomix)
+    return f"Group {ctx.deps.group_info.group_number} {context_type}:\n\n{repo_content}"
+
+
 def create_code_quality_agent() -> Agent[TADependency, CodeQualityResponse]:
     """Create an agent focused on code quality evaluation."""
     agent = Agent(
@@ -71,8 +76,7 @@ CONFIDENCE (1-10): Your confidence in the assessment.
 
     @agent.system_prompt
     async def add_repo_context(ctx: RunContext[TADependency]) -> str:
-        repo_content = get_repo_content(ctx.deps.group_info.repo_url, ctx.deps.repomix)
-        return f"Group {ctx.deps.group_info.group_number} code:\n\n{repo_content}"
+        return repo_context(ctx, context_type="code")
 
     return agent
 
@@ -107,8 +111,7 @@ CONFIDENCE (1-10): Your confidence in the assessment.
 
     @agent.system_prompt
     async def add_repo_context(ctx: RunContext[TADependency]) -> str:
-        repo_content = get_repo_content(ctx.deps.group_info.repo_url, ctx.deps.repomix)
-        return f"Group {ctx.deps.group_info.group_number} test files:\n\n{repo_content}"
+        return repo_context(ctx, context_type="tests")
 
     return agent
 
@@ -143,8 +146,7 @@ CONFIDENCE (1-10): Your confidence in the assessment.
 
     @agent.system_prompt
     async def add_repo_context(ctx: RunContext[TADependency]) -> str:
-        repo_content = get_repo_content(ctx.deps.group_info.repo_url, ctx.deps.repomix)
-        return f"Group {ctx.deps.group_info.group_number} CI/CD workflows:\n\n{repo_content}"
+        return repo_context(ctx, context_type="CI/CD configuration")
 
     return agent
 
@@ -254,7 +256,6 @@ def codebase(group_nb: None | int = None, clean: bool = True) -> None:
             logger.info(f"Overall score: {final_response.overall_score}")
             pprint(final_response)
             responses.append(final_response)
-
         except Exception as e:
             logger.error(f"Failed for group {group.group_number}: {e}")
             finalize(responses, clean, name="codebase_judge_outputs.json")

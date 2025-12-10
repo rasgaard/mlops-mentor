@@ -135,8 +135,6 @@ class TACodeResponse(BaseModel):
         cicd_response: CICDResponse,
     ) -> "TACodeResponse":
         """Create TACodeResponse from individual sub-agent responses."""
-        # Calculate overall score as weighted average
-        # Compute weighted average on the original 1-5 scale
         avg_score = (
             code_quality_response.score
             + unit_testing_response.score
@@ -156,7 +154,6 @@ class TACodeResponse(BaseModel):
             / 3
         )
 
-        # Combine summaries
         summary = (
             f"Code Quality: {code_quality_response.summary}\n\n"
             f"Unit Testing: {unit_testing_response.summary}\n\n"
