@@ -178,7 +178,7 @@ def codebase(group_nb: None | int = None, clean: bool = True) -> None:
             code_quality_deps = TADependency(
                 group_info=group,
                 repomix=RepoMix(
-                    include=["src/**/*.py", "**/*.py"],
+                    include=["**/*.py"],
                     ignore=RepoMix.Ignore(
                         customPatterns=[
                             "tests/**",
