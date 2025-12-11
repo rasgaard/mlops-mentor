@@ -4,13 +4,11 @@ import shutil
 from pathlib import Path
 from pprint import pprint
 
-import typer
 from loguru import logger
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.litellm import LiteLLMProvider
 
-from mlops_mentor.common.data import load_groups
 from mlops_mentor.llm_judge.models import (
     CICDResponse,
     CodeQualityResponse,
@@ -22,7 +20,7 @@ from mlops_mentor.llm_judge.models import (
 )
 from mlops_mentor.llm_judge.utils import get_repo_content
 
-app = typer.Typer(add_completion=False, pretty_exceptions_enable=False)
+# app = typer.Typer(add_completion=False, pretty_exceptions_enable=False)
 
 model = OpenAIChatModel(
     "Gemma3",
@@ -42,8 +40,8 @@ def finalize(responses: list, clean: bool = True, name: str = "responses.json") 
 
 
 def repo_context(ctx: RunContext[TADependency], context_type: str = "code") -> str:
-    repo_content = get_repo_content(ctx.deps.group_info.repo_url, ctx.deps.repomix)
-    return f"Group {ctx.deps.group_info.group_number} {context_type}:\n\n{repo_content}"
+    repo_content = get_repo_content(ctx.deps.repo_link, ctx.deps.repomix)
+    return f"{context_type}:\n\n{repo_content}"
 
 
 def create_code_quality_agent() -> Agent[TADependency, CodeQualityResponse]:
@@ -151,120 +149,106 @@ CONFIDENCE (1-10): Your confidence in the assessment.
     return agent
 
 
-@app.command()
-def codebase(group_nb: None | int = None, clean: bool = True) -> None:
-    """Main function to evaluate the codebase of a group."""
-    # Create specialized agents
+def codebase(repo_link: str) -> TACodeResponse:
     code_quality_agent = create_code_quality_agent()
     unit_testing_agent = create_unit_testing_agent()
     cicd_agent = create_cicd_agent()
 
-    group_data = load_groups()
-    if group_nb:
-        group_data = [group_data[group_nb - 1]]
-
-    responses: list[TACodeResponse] = []
-    for group in group_data:
-        if not group.repo_accessible:
-            logger.warning(
-                f"Skipping group {group.group_number} as the repository is not accessible"
-            )
-            continue
-        logger.info(f"Processing group {group.group_number}")
-
-        try:
-            # Code quality evaluation - focus on source code
-            logger.info(f"Evaluating code quality for group {group.group_number}")
-            code_quality_deps = TADependency(
-                group_info=group,
-                repomix=RepoMix(
-                    include=["**/*.py"],
-                    ignore=RepoMix.Ignore(
-                        customPatterns=[
-                            "tests/**",
-                            "test_*.py",
-                            "*_test.py",
-                            ".github/**",
-                            "**/*.ipynb",
-                            "**/__pycache__/**",
-                            "*.pyc",
-                            "data/**",
-                            "**/*.csv",
-                            "reports/**",
-                        ]
-                    ),
+    try:
+        # Code quality evaluation - focus on source code
+        logger.info(f"Evaluating code quality for repository {repo_link}")
+        code_quality_deps = TADependency(
+            repo_link=repo_link,
+            repomix=RepoMix(
+                include=["**/*.py"],
+                ignore=RepoMix.Ignore(
+                    customPatterns=[
+                        "tests/**",
+                        "test_*.py",
+                        "*_test.py",
+                        ".github/**",
+                        "**/*.ipynb",
+                        "**/__pycache__/**",
+                        "*.pyc",
+                        "data/**",
+                        "**/*.csv",
+                        "reports/**",
+                    ]
                 ),
-            )
-            code_quality_result = code_quality_agent.run_sync(
-                "Evaluate the code quality of this repository.",
-                deps=code_quality_deps,
-            )
-            logger.info(f"Code quality score: {code_quality_result.output.score}")
+            ),
+        )
+        code_quality_result = code_quality_agent.run_sync(
+            "Evaluate the code quality of this repository.",
+            deps=code_quality_deps,
+        )
+        logger.info(f"Code quality score: {code_quality_result.output.score}")
 
-            # Unit testing evaluation - focus on test files
-            logger.info(f"Evaluating unit testing for group {group.group_number}")
-            unit_testing_deps = TADependency(
-                group_info=group,
-                repomix=RepoMix(
-                    include=["tests/**/*.py", "test_*.py", "*_test.py", "**/*test*.py"],
-                    ignore=RepoMix.Ignore(
-                        customPatterns=[
-                            ".github/**",
-                            "**/*.ipynb",
-                            "**/__pycache__/**",
-                            "*.pyc",
-                        ]
-                    ),
+        # Unit testing evaluation - focus on test files
+        logger.info(f"Evaluating unit testing for repository {repo_link}")
+        unit_testing_deps = TADependency(
+            repo_link=repo_link,
+            repomix=RepoMix(
+                include=["tests/**/*.py", "test_*.py", "*_test.py", "**/*test*.py"],
+                ignore=RepoMix.Ignore(
+                    customPatterns=[
+                        ".github/**",
+                        "**/*.ipynb",
+                        "**/__pycache__/**",
+                        "*.pyc",
+                    ]
                 ),
-            )
-            unit_testing_result = unit_testing_agent.run_sync(
-                "Evaluate the unit testing in this repository.",
-                deps=unit_testing_deps,
-            )
-            logger.info(f"Unit testing score: {unit_testing_result.output.score}")
+            ),
+        )
+        unit_testing_result = unit_testing_agent.run_sync(
+            "Evaluate the unit testing in this repository.",
+            deps=unit_testing_deps,
+        )
+        logger.info(f"Unit testing score: {unit_testing_result.output.score}")
 
-            # CI/CD evaluation - focus on workflow files
-            logger.info(f"Evaluating CI/CD for group {group.group_number}")
-            cicd_deps = TADependency(
-                group_info=group,
-                repomix=RepoMix(
-                    include=[
-                        ".github/workflows/*.yml",
-                        ".github/workflows/*.yaml",
-                        "Dockerfile",
-                        "**/Dockerfile*",
-                        "docker-compose*.yml",
-                        "docker-compose*.yaml",
-                        ".dockerignore",
-                    ],
-                    ignore=RepoMix.Ignore(customPatterns=[]),
-                ),
-            )
-            cicd_result = cicd_agent.run_sync(
-                "Evaluate the CI/CD setup in this repository.",
-                deps=cicd_deps,
-            )
-            logger.info(f"CI/CD score: {cicd_result.output.score}")
+        # CI/CD evaluation - focus on workflow files
+        logger.info(f"Evaluating CI/CD for repository {repo_link}")
+        cicd_deps = TADependency(
+            repo_link=repo_link,
+            repomix=RepoMix(
+                include=[
+                    ".github/workflows/*.yml",
+                    ".github/workflows/*.yaml",
+                    "Dockerfile",
+                    "**/Dockerfile*",
+                    "docker-compose*.yml",
+                    "docker-compose*.yaml",
+                    ".dockerignore",
+                ],
+                ignore=RepoMix.Ignore(customPatterns=[]),
+            ),
+        )
+        cicd_result = cicd_agent.run_sync(
+            "Evaluate the CI/CD setup in this repository.",
+            deps=cicd_deps,
+        )
+        logger.info(f"CI/CD score: {cicd_result.output.score}")
 
-            # Aggregate results
-            final_response = TACodeResponse.from_sub_agents(
-                code_quality_response=code_quality_result.output,
-                unit_testing_response=unit_testing_result.output,
-                cicd_response=cicd_result.output,
-            )
+        # Aggregate results
+        final_response = TACodeResponse.from_sub_agents(
+            code_quality_response=code_quality_result.output,
+            unit_testing_response=unit_testing_result.output,
+            cicd_response=cicd_result.output,
+        )
 
-            logger.info(f"Overall score: {final_response.overall_score}")
-            pprint(final_response)
-            responses.append(final_response)
-        except Exception as e:
-            logger.error(f"Failed for group {group.group_number}: {e}")
-            finalize(responses, clean, name="codebase_judge_outputs.json")
-            raise e
-    finalize(responses, clean, name="codebase_judge_outputs.json")
+        logger.info(f"Overall score: {final_response.overall_score}")
+        pprint(final_response)
+    except Exception as e:
+        logger.error(f"Failed for repository {repo_link}: {e}")
+        # finalize(final_response, clean, name="codebase_judge_outputs.json")
+        shutil.rmtree(Path("output"))
+        raise e
+    # finalize(final_response, clean, name="codebase_judge_outputs.json")
+    shutil.rmtree(Path("output"))
+    return final_response
 
 
-@app.command()
-def report(group_nb: None | int = None, clean: bool = True) -> None:
+# @app.command()
+def report(repo_link: str) -> TAReportResponse:
     """Main function to evaluate the report of a group."""
     ta_agent = Agent(
         model=model,
@@ -293,34 +277,34 @@ def report(group_nb: None | int = None, clean: bool = True) -> None:
 
     @ta_agent.system_prompt
     async def add_group_information(ctx: RunContext[TADependency]) -> str:
-        group_number = ctx.deps.group_info.group_number
-        repo_content = get_repo_content(ctx.deps.group_info.repo_url, ctx.deps.repomix)
+        repo_content = get_repo_content(ctx.deps.repo_link, ctx.deps.repomix)
         return f"""
-        Group {group_number} has submitted the following report:
+        Report Content:\n\n
         {repo_content}
         """
 
-    group_data = load_groups()
-    if group_nb:
-        group_data = [group_data[group_nb - 1]]
-
-    responses: list[TAReportResponse] = []
-    for group in group_data:
-        deps = TADependency(
-            group_info=group, repomix=RepoMix(include=["reports/README.md"])
-        )
-        try:
-            result = ta_agent.run_sync(
-                "What do you think of the groups report?", deps=deps
-            )
-            result.output.request_usage = result.usage()
-            pprint(result.output)
-            responses.append(result.output)
-        except Exception as e:
-            finalize(responses, clean, name="codebase")
-            raise e
-    finalize(responses, clean, name="codebase")
+    deps = TADependency(
+        repo_link=repo_link, repomix=RepoMix(include=["reports/README.md"])
+    )
+    try:
+        result = ta_agent.run_sync("What do you think of the groups report?", deps=deps)
+        result.output.request_usage = result.usage()
+        pprint(result.output)
+    except Exception as e:
+        # finalize(responses, clean, name="codebase")
+        shutil.rmtree(Path("output"))
+        raise e
+    # finalize(responses, clean, name="codebase")
+    shutil.rmtree(Path("output"))
+    return result.output
 
 
 if __name__ == "__main__":
-    app()
+    import typer
+
+    app = typer.Typer(add_completion=False, pretty_exceptions_enable=False)
+
+    app.command()(codebase)
+    app.command()(report)
+
+    app()  # type: ignore
