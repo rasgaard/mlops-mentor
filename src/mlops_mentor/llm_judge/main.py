@@ -8,6 +8,7 @@ from loguru import logger
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.litellm import LiteLLMProvider
+from pydantic_ai.providers.ollama import OllamaProvider
 
 from mlops_mentor.llm_judge.models import (
     CICDResponse,
@@ -20,14 +21,15 @@ from mlops_mentor.llm_judge.models import (
 )
 from mlops_mentor.llm_judge.utils import get_repo_content
 
-# app = typer.Typer(add_completion=False, pretty_exceptions_enable=False)
+ollama_provider = OllamaProvider(base_url="http://localhost:11434/v1")
+litellm_provider = LiteLLMProvider(
+    api_base="https://chat.campusai.compute.dtu.dk/api/v1",
+    api_key=os.getenv("CAMPUSAI_API_KEY"),
+)
 
 model = OpenAIChatModel(
-    "Gemma3",
-    provider=LiteLLMProvider(
-        api_base="https://chat.campusai.compute.dtu.dk/api/v1",
-        api_key=os.getenv("CAMPUSAI_API_KEY"),
-    ),
+    model_name="ministral-3:8b-32k",
+    provider=ollama_provider,
 )
 
 

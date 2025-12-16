@@ -1,9 +1,8 @@
 import csv
 from pathlib import Path
 
-from mlops_mentor.common.models import GroupInfo
 
-
+# no longer in use, but kept for reference
 def load_groups(file_name: str = "group_info.csv") -> list[GroupInfo]:
     """Loads the group-repository data into a DataFrame."""
     with Path(file_name).open() as f:
