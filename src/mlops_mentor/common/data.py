@@ -1,7 +1,7 @@
 import csv
 from pathlib import Path
 
-from mlops_mentor.common.models import GroupInfo
+from mlops_mentor.common.models import GroupInfo, RepoInfo
 
 
 def load_groups(file_name: str = "group_info.csv") -> list[GroupInfo]:
@@ -19,7 +19,7 @@ def load_groups(file_name: str = "group_info.csv") -> list[GroupInfo]:
                 student_3=row[3] if row[3] != "" else None,
                 student_4=row[4] if row[4] != "" else None,
                 student_5=row[5] if row[5] != "" else None,
-                repo_url=row[6],
+                repo_info=RepoInfo(repo_url=row[6]),
             )
             content.append(group)
     return content

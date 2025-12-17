@@ -3,18 +3,24 @@ from loguru import logger
 from pydantic import BaseModel
 
 from mlops_mentor.common import github_headers as headers
-from mlops_mentor.scraper.models import Contributor
 
 
-class GroupInfo(BaseModel):
+class Contributor(BaseModel):
+    """Model for contributors."""
+
+    login: str
+    contributions: int
+    commits_pr: int
+
+    @property
+    def total_commits(self) -> int:
+        """Returns the total number of commits by the contributor."""
+        return self.contributions + self.commits_pr
+
+
+class RepoInfo(BaseModel):
     """Model for group information."""
 
-    group_number: int
-    student_1: str | None
-    student_2: str | None
-    student_3: str | None
-    student_4: str | None
-    student_5: str | None
     repo_url: str
 
     @property
@@ -44,24 +50,6 @@ class GroupInfo(BaseModel):
             self._repo_accessible = False
 
         return self._repo_accessible
-
-    @property
-    def group_size(self) -> int:
-        """Returns the number of students in the group."""
-        return len(
-            list(
-                filter(
-                    None,
-                    [
-                        self.student_1,
-                        self.student_2,
-                        self.student_3,
-                        self.student_4,
-                        self.student_5,
-                    ],
-                )
-            )
-        )
 
     @property
     def repo_api(self) -> str:
@@ -127,3 +115,15 @@ class GroupInfo(BaseModel):
             page_counter += 1
             commits.extend(request)
         return commits
+
+
+class GroupInfo(BaseModel):
+    """Model for group information."""
+
+    group_number: int
+    student_1: str | None
+    student_2: str | None
+    student_3: str | None
+    student_4: str | None
+    student_5: str | None
+    repo_info: RepoInfo

@@ -13,8 +13,6 @@ from mlops_mentor.common import github_headers as headers
 class RepoStats(BaseModel):
     """Model for repository statistics."""
 
-    group_number: int
-    group_size: int
     num_contributors: int | None
     num_prs: int | None
     num_commits_to_main: int | None
@@ -42,23 +40,9 @@ class RepoStats(BaseModel):
         return ",".join(f"0{d=}" for d in self.model_dump().items())
 
 
-class Contributor(BaseModel):
-    """Model for contributors."""
-
-    login: str
-    contributions: int
-    commits_pr: int
-
-    @property
-    def total_commits(self) -> int:
-        """Returns the total number of commits by the contributor."""
-        return self.contributions + self.commits_pr
-
-
 class Report(BaseModel):
     """Model for the report."""
 
-    group_number: int
     repo_api: str
     default_branch: str
     file_written: bool = False
@@ -114,7 +98,6 @@ class Report(BaseModel):
 class RepoContent(BaseModel):
     """Model for repository content."""
 
-    group_number: int
     repo_api: str
     default_branch: str
 

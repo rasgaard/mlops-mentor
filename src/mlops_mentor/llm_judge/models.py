@@ -4,8 +4,6 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from pydantic_ai.usage import RunUsage
 
-from mlops_mentor.common.models import GroupInfo
-
 
 class RepoMix(BaseModel):
     """Configuration for the repomix."""
@@ -47,7 +45,7 @@ class RepoMix(BaseModel):
 class TADependency(BaseModel):
     """Model for the dependencies of the TA agent."""
 
-    group_info: GroupInfo
+    repo_link: str
     repomix: RepoMix
 
 
