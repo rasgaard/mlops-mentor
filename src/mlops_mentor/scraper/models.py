@@ -40,19 +40,6 @@ class RepoStats(BaseModel):
         return ",".join(f"0{d=}" for d in self.model_dump().items())
 
 
-class Contributor(BaseModel):
-    """Model for contributors."""
-
-    login: str
-    contributions: int
-    commits_pr: int
-
-    @property
-    def total_commits(self) -> int:
-        """Returns the total number of commits by the contributor."""
-        return self.contributions + self.commits_pr
-
-
 class Report(BaseModel):
     """Model for the report."""
 
