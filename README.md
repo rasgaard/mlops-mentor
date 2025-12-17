@@ -1,6 +1,6 @@
 # MLOps Mentor 🤖
 
-An automated teaching assistant for evaluating MLOps course projects using LLM-powered code analysis and GitHub repository scraping.
+An automated teaching assistant for evaluating [MLOps course](https://skaftenicki.github.io/dtu_mlops/) projects using LLM-powered code analysis and GitHub repository scraping.
 
 ## Overview
 
@@ -19,7 +19,7 @@ The tool automates the tedious parts of grading while providing detailed, consis
 - Python 3.13+
 - [uv](https://github.com/astral-sh/uv) package manager
 - GitHub Personal Access Token
-- AI model access (Ollama or CampusAI)
+- AI model access (Ollama or [CampusAI](https://campusai.compute.dtu.dk/))
 
 ### Setup
 
