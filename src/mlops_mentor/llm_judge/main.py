@@ -241,17 +241,14 @@ def codebase(repo_link: str) -> TACodeResponse:
         pprint(final_response)
     except Exception as e:
         logger.error(f"Failed for repository {repo_link}: {e}")
-        # finalize(final_response, clean, name="codebase_judge_outputs.json")
         shutil.rmtree(Path("output"))
         raise e
-    # finalize(final_response, clean, name="codebase_judge_outputs.json")
     shutil.rmtree(Path("output"))
     return final_response
 
 
-# @app.command()
 def report(repo_link: str) -> TAReportResponse:
-    """Main function to evaluate the report of a group."""
+    """Main function to evaluate the report of a repository."""
     ta_agent = Agent(
         model=model,
         deps_type=TADependency,
@@ -278,7 +275,7 @@ def report(repo_link: str) -> TAReportResponse:
     )
 
     @ta_agent.system_prompt
-    async def add_group_information(ctx: RunContext[TADependency]) -> str:
+    async def add_report_information(ctx: RunContext[TADependency]) -> str:
         repo_content = get_repo_content(ctx.deps.repo_link, ctx.deps.repomix)
         return f"""
         Report Content:\n\n
@@ -293,10 +290,8 @@ def report(repo_link: str) -> TAReportResponse:
         result.output.request_usage = result.usage()
         pprint(result.output)
     except Exception as e:
-        # finalize(responses, clean, name="codebase")
         shutil.rmtree(Path("output"))
         raise e
-    # finalize(responses, clean, name="codebase")
     shutil.rmtree(Path("output"))
     return result.output
 

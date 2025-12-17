@@ -8,8 +8,6 @@ from loguru import logger
 from typer import Typer
 
 from mlops_mentor.common import github_headers as headers
-
-# from mlops_mentor.common.data import load_groups
 from mlops_mentor.common.models import RepoInfo
 from mlops_mentor.scraper.models import RepoContent, Report, RepoStats
 
@@ -182,38 +180,32 @@ def scrape(repo_link: str) -> RepoStats:
     return repo_stats
 
 
-def clone(base_dir: str = "cloned_repos"):
+def clone(repo_link: str, base_dir: str = "cloned_repos"):
     """Clones the repositories of the groups."""
-    logger.info("Getting group-repository information")
-    groups = []  # load_groups()
-    logger.info("Group-repository information loaded successfully")
 
     if not os.path.exists(base_dir):
         os.makedirs(base_dir)
 
-    for group in groups:
-        repo_url = group.repo_url
-        group_number = group.group_number
+    repo_url = repo_link
+    # Create a directory for the group if it doesn't exist
+    group_dir = os.path.join(base_dir, f"group_{'.'.join(repo_link.split('/')[-2:])}")
+    if not os.path.exists(group_dir):
+        os.makedirs(group_dir)
 
-        # Create a directory for the group if it doesn't exist
-        group_dir = os.path.join(base_dir, f"group_{group_number}")
-        if not os.path.exists(group_dir):
-            os.makedirs(group_dir)
+    # Extract the repository name from the URL
+    repo_name = repo_url.split("/")[-1].replace(".git", "")
 
-        # Extract the repository name from the URL
-        repo_name = repo_url.split("/")[-1].replace(".git", "")
+    # Create a directory for the repository
+    repo_dir = os.path.join(group_dir, repo_name)
+    if not os.path.exists(repo_dir):
+        os.makedirs(repo_dir)
 
-        # Create a directory for the repository
-        repo_dir = os.path.join(group_dir, repo_name)
-        if not os.path.exists(repo_dir):
-            os.makedirs(repo_dir)
-
-        # Clone the repository
-        try:
-            subprocess.run(["git", "clone", repo_url, repo_dir], check=True)
-            logger.info(f"Successfully cloned {repo_url} into {repo_dir}")
-        except subprocess.CalledProcessError as e:
-            logger.info(f"Failed to clone {repo_url}: {e}")
+    # Clone the repository
+    try:
+        subprocess.run(["git", "clone", repo_url, repo_dir], check=True)
+        logger.info(f"Successfully cloned {repo_url} into {repo_dir}")
+    except subprocess.CalledProcessError as e:
+        logger.info(f"Failed to clone {repo_url}: {e}")
 
 
 if __name__ == "__main__":

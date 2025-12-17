@@ -56,7 +56,6 @@ class Contributor(BaseModel):
 class Report(BaseModel):
     """Model for the report."""
 
-    # group_number: int
     repo_api: str
     default_branch: str
     file_written: bool = False
@@ -112,7 +111,6 @@ class Report(BaseModel):
 class RepoContent(BaseModel):
     """Model for repository content."""
 
-    # group_number: int
     repo_api: str
     default_branch: str
 
