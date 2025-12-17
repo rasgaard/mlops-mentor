@@ -67,8 +67,10 @@ class Report(BaseModel):
         if response.get("message") != "Not Found" and response.get("status") != "404":
             content_base64 = response["content"]
             content_decoded = base64.b64decode(content_base64).decode("utf-8")
-            with open("README.md", "w", encoding="utf-8") as file:
-                file.write(content_decoded)
+
+            out_path = Path("./output/README.md")
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(content_decoded, encoding="utf-8")
             self.file_written = True
         else:
             self.file_written = False

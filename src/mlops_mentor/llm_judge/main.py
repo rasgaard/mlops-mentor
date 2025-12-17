@@ -238,7 +238,6 @@ def codebase(repo_link: str) -> TACodeResponse:
         )
 
         logger.info(f"Overall score: {final_response.overall_score}")
-        pprint(final_response)
     except Exception as e:
         logger.error(f"Failed for repository {repo_link}: {e}")
         shutil.rmtree(Path("output"))

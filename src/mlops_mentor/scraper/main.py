@@ -46,7 +46,7 @@ def create_activity_matrix(
 def scrape(repo_link: str) -> RepoStats:
     repo = RepoInfo(repo_url=repo_link)
 
-    if not repo.repo_accessible:
+    if not repo.is_accessible:
         logger.error(f"Repository {repo.repo_url} is not accessible.")
         repo_stats = RepoStats(
             num_contributors=None,

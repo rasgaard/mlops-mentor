@@ -24,7 +24,7 @@ class RepoInfo(BaseModel):
     repo_url: str
 
     @property
-    def repo_accessible(self) -> bool:
+    def is_accessible(self) -> bool:
         """Returns True if the repository is accessible."""
         if hasattr(self, "_repo_accessible") and self._repo_accessible is not None:
             return self._repo_accessible
