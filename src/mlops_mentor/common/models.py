@@ -103,3 +103,15 @@ class RepoInfo(BaseModel):
             page_counter += 1
             commits.extend(request)
         return commits
+
+
+class GroupInfo(BaseModel):
+    """Model for group information."""
+
+    group_number: int
+    student_1: str | None
+    student_2: str | None
+    student_3: str | None
+    student_4: str | None
+    student_5: str | None
+    repo_info: RepoInfo
