@@ -21,15 +21,22 @@ from mlops_mentor.llm_judge.models import (
 )
 from mlops_mentor.llm_judge.utils import get_repo_content
 
-ollama_provider = OllamaProvider(base_url="http://localhost:11434/v1")
-litellm_provider = LiteLLMProvider(
-    api_base="https://chat.campusai.compute.dtu.dk/api/v1",
-    api_key=os.getenv("CAMPUSAI_API_KEY"),
-)
+if os.getenv("CAMPUSAI_API_KEY") is None:
+    logger.info(
+        "CAMPUSAI_API_KEY not found in environment variables. Will use OllamaProvider."
+    )
+    provider = OllamaProvider(base_url="http://localhost:11434/v1")
+    model_name = "ministral-3:8b-32k"
+else:
+    provider = LiteLLMProvider(
+        api_base="https://chat.campusai.compute.dtu.dk/api/v1",
+        api_key=os.getenv("CAMPUSAI_API_KEY"),
+    )
+    model_name = "Gemma3"
 
 model = OpenAIChatModel(
-    model_name="ministral-3:8b-32k",
-    provider=ollama_provider,
+    model_name=model_name,
+    provider=provider,
 )
 
 
