@@ -21,3 +21,5 @@ if __name__ == "__main__":
         print(f"Evaluating codebase for repository: {repo_url}")
         evaluation = codebase(repo_url)
         print(f"Codebase evaluation: {evaluation}")
+
+    # TODO: Save results to Hugging Face dataset

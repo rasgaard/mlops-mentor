@@ -1,1 +1,1 @@
-from mlops_mentor.llm_judge.main import codebase, report
+from mlops_mentor.llm_judge.judge import codebase, report

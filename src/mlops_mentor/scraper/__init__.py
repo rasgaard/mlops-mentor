@@ -1,1 +1,1 @@
-from mlops_mentor.scraper.main import scrape
+from mlops_mentor.scraper.scraper import scrape
